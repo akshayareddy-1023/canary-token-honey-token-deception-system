@@ -1,66 +1,59 @@
 # Canary Token Active Honey Token Deception System
 
-A Flask-based cybersecurity deception system that uses **honey tokens and decoy files** to detect unauthorized access attempts. The application generates unique tokens, monitors token access, records security events, creates high-severity alerts, and presents the activity through a web-based security dashboard.
+A Flask-based cybersecurity deception and incident-monitoring system that uses **honey tokens and decoy files** to detect suspicious access attempts. When a protected token is triggered, the system records the event, captures request information, creates a security alert, and updates the administrator dashboard.
 
-## Why this project?
-
-Traditional security monitoring can miss suspicious activity that occurs after an attacker has already gained access to a system. A honey token is a deliberately placed digital resource that should not be accessed during normal operation. If it is triggered, the event can be treated as a strong indicator of suspicious activity.
-
-This project demonstrates that concept in a simple, practical web application suitable for learning and academic cybersecurity projects.
+> **Academic / PBL Project:** This project demonstrates deception-based detection for learning, controlled demonstrations, and cybersecurity project work. It is not a production-ready security platform.
 
 ## Key Features
 
-- **URL Honey Token Generation** – creates unique cryptographically random token IDs.
-- **File Honey Tokens** – creates a decoy confidential document containing a token-trigger link.
-- **Access Detection** – detects when a registered honey token is accessed.
-- **Security Alerts** – generates a HIGH-severity alert for a triggered token.
-- **Event Logging** – stores token ID, timestamp, IP address, request method, user agent, status, and alert details.
-- **SQLite Database** – maintains security-event records locally.
-- **Security Dashboard** – displays token status, incidents, alerts, unique IPs, and token history.
-- **Incident Statistics** – calculates triggered-token and incident information for monitoring.
+- 🔐 **Administrator Authentication** with hashed passwords
+- 🪤 **URL Honey Tokens** with cryptographically random token IDs
+- 📄 **File Honey Tokens** that create realistic decoy files
+- ♻️ **Unique File Names** such as `Employee_Report.pdf`, `Employee_Report_001.pdf`, etc.
+- 🚨 **Automatic Detection & HIGH Alerts** when a honey token is triggered
+- 🌐 **Source IP Detection** using the client request address
+- 📍 **Best-effort IP Location** for public IP addresses
+- 🚫 **Application-level IP Blocking** from the admin dashboard
+- 📊 **Live Security Dashboard** with automatic updates
+- 👤 **Separate User Dashboard** that does not expose administrator trigger URLs
+- 🗃️ **SQLite Event Logging** for incidents and blocked IPs
+- 📱 **Responsive Web Interface** for laptop and phone screens
+- 💻 **LAN Access** for controlled demonstrations on the same network
 
 ## Technology Stack
 
 | Technology | Purpose |
 |---|---|
-| Python | Application logic and token generation |
-| Flask | Web application and REST-style endpoints |
-| SQLite | Security-event storage |
-| HTML/CSS | Dashboard interface |
-| JavaScript | Dashboard interactions and visualizations |
-| Chart.js | Dashboard charts |
+| Python | Core application logic and token generation |
+| Flask | Web application and API routes |
+| SQLite | Security-event and blocked-IP storage |
+| HTML/CSS | Responsive web interface |
+| JavaScript | Live dashboard updates and actions |
+| Werkzeug | Password hashing and credential verification |
 
-## Project Architecture
+## System Workflow
 
 ```text
-                         +----------------------+
-                         |   Flask Web App      |
-                         |       app.py         |
-                         +----------+-----------+
-                                    |
-              +---------------------+----------------------+
-              |                     |                      |
-              v                     v                      v
-      +---------------+     +---------------+      +---------------+
-      | Honey Tokens  |     |   Detection   |      | Alert Manager |
-      |   Generator   |     |    Module     |      |               |
-      +-------+-------+     +-------+-------+      +-------+-------+
-              |                     |                      |
-              |                     +----------+-----------+
-              |                                |
-              v                                v
-      +---------------+                 +---------------+
-      | Decoy Files   |                 | SQLite DB     |
-      +---------------+                 |  events.db   |
-                                        +-------+-------+
-                                                |
-                                                v
-                                      +-------------------+
-                                      | Security Dashboard|
-                                      +-------------------+
+Admin creates honeytoken
+        ↓
+Unique token / decoy file is generated
+        ↓
+User receives only the decoy resource
+        ↓
+Resource is opened / token endpoint is triggered
+        ↓
+Request IP + time + method + user-agent are captured
+        ↓
+Detection event is stored in SQLite
+        ↓
+HIGH-severity alert is generated
+        ↓
+Admin dashboard updates automatically
+        ↓
+Admin investigates and can block the source IP
 ```
 
-## Project Structure
+## Project Architecture
 
 ```text
 canary-token-honey-token-deception-system/
@@ -74,10 +67,11 @@ canary-token-honey-token-deception-system/
 │
 ├── database/
 │   ├── __init__.py
+│   ├── admin_auth.py
 │   └── database.py
 │
 ├── decoy_files/
-│   └── # Generated decoy files appear here at runtime
+│   └── .gitkeep
 │
 ├── detection/
 │   └── detector.py
@@ -98,24 +92,18 @@ canary-token-honey-token-deception-system/
 │   └── style.css
 │
 ├── templates/
-│   └── dashboard.html
+│   ├── admin_login.html
+│   ├── dashboard.html
+│   ├── file_accessed.html
+│   └── user_dashboard.html
 │
-├── tests/
 ├── .gitignore
 ├── LICENSE
 ├── README.md
 └── requirements.txt
 ```
 
-## How the System Works
-
-First, the application generates a unique honey token using Python's `secrets` module. The token is stored with its creation time and ACTIVE status. A file honey token can also create a decoy document that contains a unique token-trigger URL.
-
-When someone accesses a valid token URL, the Flask application identifies the token and changes its status to TRIGGERED. The detection module collects request information such as the timestamp, source IP address, HTTP method, and user-agent string. The alert manager then creates a HIGH-severity security alert, and the complete event is stored in the SQLite database.
-
-The dashboard reads the stored information and presents token counts, incidents, alerts, unique IP addresses, token history, and other monitoring information in one place.
-
-## Setup and Installation
+## Installation
 
 ### 1. Clone the repository
 
@@ -124,20 +112,25 @@ git clone https://github.com/YOUR-USERNAME/canary-token-honey-token-deception-sy
 cd canary-token-honey-token-deception-system
 ```
 
-### 2. Create a virtual environment
+### 2. Create and activate a virtual environment
 
-Windows:
+**Windows PowerShell:**
 
-```bash
+```powershell
 python -m venv venv
-venv\Scripts\activate
+.\venv\Scripts\Activate.ps1
 ```
 
-macOS/Linux:
+If PowerShell blocks activation:
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+Then activate again:
+
+```powershell
+.\venv\Scripts\Activate.ps1
 ```
 
 ### 3. Install dependencies
@@ -146,29 +139,85 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the application
+### 4. Start the application
 
 ```bash
 python -m app.app
 ```
 
-The application starts locally using Flask's development server.
+On the first run, the terminal prints a generated administrator username and password. **Save those credentials and change the password from the Admin Dashboard.**
 
-Open the dashboard at:
+For a controlled demo, the initial credentials can also be supplied before the first run.
 
-```text
-http://127.0.0.1:5000/dashboard
+**PowerShell:**
+
+```powershell
+$env:CANARY_ADMIN_USERNAME="admin"
+$env:CANARY_ADMIN_PASSWORD="YourStrongPasswordHere"
+python -m app.app
 ```
 
-## Main Endpoints
+A random development Flask secret is used when `CANARY_SECRET_KEY` is not supplied. For longer-lived deployments, provide your own secret through an environment variable.
 
-| Endpoint | Purpose |
-|---|---|
-| `/` | Displays the application home page |
-| `/dashboard` | Opens the security monitoring dashboard |
-| `/generate-token` | Generates a URL honey token |
-| `/generate-file-token` | Generates a file honey token and decoy file |
-| `/honeytoken/<token_id>` | Trigger endpoint used to detect token access |
+## Access the Application
+
+After starting Flask, the terminal displays the local and LAN addresses.
+
+### Administrator
+
+```text
+http://127.0.0.1:5000/admin/login
+```
+
+### User Dashboard
+
+```text
+http://127.0.0.1:5000/user-dashboard
+```
+
+### Health Check
+
+```text
+http://127.0.0.1:5000/health
+```
+
+For phone testing, connect the phone and laptop to the same Wi-Fi network and open the **LAN address printed in the terminal**, followed by `:5000`.
+
+## Demonstration Workflow
+
+1. Open **Admin Login**.
+2. Sign in using the first-run credentials shown in the terminal.
+3. Open the **Admin Security Dashboard**.
+4. Create a file honeytoken, for example `Employee_Salary_Report.pdf`.
+5. Create another file with the same name to demonstrate automatic unique naming (`_001`, `_002`, etc.).
+6. Open **User Dashboard** in another browser tab/window.
+7. The user sees the decoy files without seeing the administrator-only trigger endpoint.
+8. Open a decoy file through the User Dashboard.
+9. The system records the trigger and generates a HIGH-severity incident.
+10. Return to the Admin Dashboard. The incident appears automatically without manually refreshing the page.
+11. Review the source IP and location information.
+12. Use **Block IP** to demonstrate application-level incident response.
+13. Try the resource again from the blocked address to demonstrate the response behavior.
+
+## Security Data Handling
+
+Runtime data is intentionally excluded from Git tracking:
+
+- `database/admin_config.json` — local administrator credential configuration
+- `database/events.db` — local SQLite security events
+- `honeytokens/tokens.json` — generated token records
+- `decoy_files/*` — generated decoy resources
+- `.env` / `.env.*` — local environment configuration
+
+Do **not** commit real passwords, API keys, private credentials, or sensitive organizational data.
+
+## Important Security Notes
+
+- IP blocking in this project is **application-level blocking**, not an operating-system firewall rule.
+- IP geolocation is best-effort and may be unavailable for private/local IP addresses or when the external lookup service cannot be reached.
+- Flask's built-in server is intended for development and demonstrations, not production deployment.
+- The project should be reviewed and hardened before any real-world deployment.
+- Only deploy and test deception resources in systems and networks where you have authorization.
 
 ## Screenshots
 
@@ -180,7 +229,7 @@ http://127.0.0.1:5000/dashboard
 
 ![Honey Token Generation](screenshots/token_generation.png)
 
-### Token Trigger / Detection
+### Alert Trigger
 
 ![Alert Trigger](screenshots/alert_trigger.png)
 
@@ -192,25 +241,16 @@ http://127.0.0.1:5000/dashboard
 
 ![Recent Token History](screenshots/recent_token_history.png)
 
-## Security and Privacy Notes
-
-This project is intended for **local development, demonstrations, and academic learning**. Do not deploy it publicly without reviewing authentication, authorization, input validation, logging, secret management, production server configuration, and other security controls.
-
-Generated runtime data such as the SQLite database and token history is intentionally excluded from version control. The repository contains source code and example configuration rather than a developer's local runtime state.
-
 ## Future Enhancements
 
-- Email or messaging notifications for triggered tokens
-- Authentication and role-based dashboard access
-- Additional honey-token types
-- Configurable alert severity and rules
+- Email / messaging notifications
+- Role-based access control
+- More honeytoken formats
+- Advanced incident timeline and investigation views
 - Exportable security reports
-- Improved automated testing
-- Production-ready deployment configuration
-
-## Academic Project
-
-This repository contains the implementation of a **PBL (Project-Based Learning) cybersecurity project** demonstrating deception-based detection using honey tokens.
+- Automated unit and integration tests
+- Production WSGI deployment configuration
+- Centralized logging and SIEM integration
 
 ## License
 

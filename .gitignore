@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Flask / local development
+instance/
+.webassets-cache/
+.env
+.env.*
+
+# Generated application data
+*.db
+*.sqlite
+*.sqlite3
+honeytokens/tokens.json
+logs/
+decoy_files/*
+!decoy_files/.gitkeep
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Runtime secrets/data
+database/admin_config.json
+database/events.db
+__pycache__/

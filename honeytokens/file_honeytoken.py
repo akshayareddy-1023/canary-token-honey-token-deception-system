@@ -1,149 +1,84 @@
 import secrets
 import json
 import os
+import re
 from datetime import datetime
 
 
-# =========================================================
-# PROJECT PATHS
-# =========================================================
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TOKEN_FILE = os.path.join(os.path.dirname(__file__), "tokens.json")
+DECOY_FOLDER = os.path.join(BASE_DIR, "decoy_files")
 
-BASE_DIR = os.path.dirname(
-    os.path.dirname(os.path.abspath(__file__))
-)
-
-TOKEN_FILE = os.path.join(
-    os.path.dirname(__file__),
-    "tokens.json"
-)
-
-DECOY_FOLDER = os.path.join(
-    BASE_DIR,
-    "decoy_files"
-)
+os.makedirs(DECOY_FOLDER, exist_ok=True)
 
 
-# =========================================================
-# CREATE DECOY FOLDER
-# =========================================================
+def _load_tokens():
+    if not os.path.exists(TOKEN_FILE):
+        return []
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return []
 
-os.makedirs(
-    DECOY_FOLDER,
-    exist_ok=True
-)
+
+def _save_tokens(tokens):
+    with open(TOKEN_FILE, "w", encoding="utf-8") as file:
+        json.dump(tokens, file, indent=4)
 
 
-# =========================================================
-# GENERATE FILE HONEY TOKEN
-# =========================================================
+def _make_unique_filename(filename, tokens):
+    """Return a safe, unique decoy filename.
 
-def generate_file_honeytoken(
-    filename="Confidential_Report.txt"
-):
+    The admin can choose the base name. If that name already exists, a
+    numbered suffix is added so every generated honeytoken has its own file.
+    """
+    filename = os.path.basename(filename).strip()
+    if not filename:
+        filename = "Confidential_Report.txt"
 
-    # -----------------------------------------------------
-    # Generate unique token
-    # -----------------------------------------------------
+    # Remove characters that are unsafe or awkward in Windows filenames.
+    filename = re.sub(r'[<>:"/\\|?*]', '_', filename)
+    filename = filename.rstrip('. ')
 
+    stem, extension = os.path.splitext(filename)
+    if not extension:
+        extension = ".txt"
+
+    existing = {str(t.get("filename", "")).lower() for t in tokens}
+    candidate = f"{stem}{extension}"
+    number = 1
+
+    while candidate.lower() in existing or os.path.exists(os.path.join(DECOY_FOLDER, candidate)):
+        candidate = f"{stem}_{number:03d}{extension}"
+        number += 1
+
+    return candidate
+
+
+def generate_file_honeytoken(filename="Confidential_Report.txt"):
+    # Keep generated files inside the decoy folder and make every name unique.
+    tokens = _load_tokens()
+    filename = _make_unique_filename(filename, tokens)
     token_id = secrets.token_hex(16)
 
-
-    # -----------------------------------------------------
-    # Create trigger URL
-    # -----------------------------------------------------
-
-    trigger_url = (
-        f"http://127.0.0.1:5000/honeytoken/{token_id}"
-    )
-
-
-    # -----------------------------------------------------
-    # Token information
-    # -----------------------------------------------------
-
     token = {
-
-        "token_id":
-            token_id,
-
-        "token_type":
-            "FILE",
-
-        "filename":
-            filename,
-
-        "created_at":
-            datetime.now().isoformat(),
-
-        "status":
-            "ACTIVE"
-
+        "token_id": token_id,
+        "token_type": "FILE",
+        "filename": filename,
+        "created_at": datetime.now().isoformat(),
+        "status": "ACTIVE"
     }
 
-
-    # -----------------------------------------------------
-    # Load existing tokens
-    # -----------------------------------------------------
-
-    if os.path.exists(TOKEN_FILE):
-
-        try:
-
-            with open(
-                TOKEN_FILE,
-                "r"
-            ) as file:
-
-                tokens = json.load(file)
-
-        except json.JSONDecodeError:
-
-            tokens = []
-
-    else:
-
-        tokens = []
-
-
-    # -----------------------------------------------------
-    # Add new token
-    # -----------------------------------------------------
-
     tokens.append(token)
+    _save_tokens(tokens)
 
+    file_path = os.path.join(DECOY_FOLDER, filename)
 
-    # -----------------------------------------------------
-    # Save token
-    # -----------------------------------------------------
+    # The unique token URL is generated from this file's token ID.
+    trigger_url = f"/honeytoken/{token_id}"
 
-    with open(
-        TOKEN_FILE,
-        "w"
-    ) as file:
-
-        json.dump(
-            tokens,
-            file,
-            indent=4
-        )
-
-
-    # =====================================================
-    # CREATE DECOY FILE
-    # =====================================================
-
-    file_path = os.path.join(
-        DECOY_FOLDER,
-        filename
-    )
-
-
-    # -----------------------------------------------------
-    # File content
-    # -----------------------------------------------------
-
-    file_content = f"""
-============================================================
+    file_content = f"""============================================================
 CONFIDENTIAL COMPANY REPORT
 ============================================================
 
@@ -163,10 +98,6 @@ intended only for authorized personnel.
 SECURITY VERIFICATION
 ------------------------------------------------------------
 
-If you received this document unexpectedly, verify
-your authorization before accessing the security
-verification link below.
-
 Security Verification:
 {trigger_url}
 
@@ -180,29 +111,9 @@ and recorded by the organization's security system.
 ============================================================
 """
 
-
-    # -----------------------------------------------------
-    # Write decoy file
-    # -----------------------------------------------------
-
-    with open(
-        file_path,
-        "w",
-        encoding="utf-8"
-    ) as file:
-
-        file.write(
-            file_content
-        )
-
-
-    # -----------------------------------------------------
-    # Add file information to response
-    # -----------------------------------------------------
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(file_content)
 
     token["file_path"] = file_path
-
     token["trigger_url"] = trigger_url
-
-
     return token
